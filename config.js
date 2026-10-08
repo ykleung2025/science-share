@@ -13,8 +13,8 @@
  */
 window.SCIENCE_SHARE_CONFIG = {
   // 部署後的網頁應用程式網址（請替換）
-  APPS_SCRIPT_URL: 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxE6LNkYmkBRHflVlfZAu5maM25x01-Mz7UOmLjlphmHOGpT9_OR0tKpBG7NNkSu_X_/exec',
 
   // true = 本機示範；false = 呼叫 APPS_SCRIPT_URL
-  USE_MOCK: true,
+  USE_MOCK: false,
 };
