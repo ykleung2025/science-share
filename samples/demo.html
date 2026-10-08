@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>示範教學頁｜科學網站分享</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../styles.css?v=3" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site-header">
+      <h1 id="demo-title">示範教學頁</h1>
+      <p class="subtitle" id="demo-lead">呢頁用嚟試篩選，唔係正式教材。</p>
+    </header>
+    <main>
+      <section class="card">
+        <p id="demo-body">載入緊…</p>
+        <p><a class="text-link" href="../index.html">← 返回科學網站分享</a></p>
+      </section>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var pages = {
+        'body-structure': {
+          title: '示範：生物的構造',
+          lead: '小二 · 生物的特性 · 生物的構造',
+          body: '呢個係示範頁，用來試「科學網站分享」嘅篩選，唔係正式教材。可以帶學生觀察植物嘅葉、根同莖。'
+        },
+        'healthy-living': {
+          title: '示範：健康的生活方式',
+          lead: '小一 · 人體健康 · 健康的生活方式',
+          body: '示範頁。由眼睛、牙齒同作息講起：均衡飲食、運動、充足睡眠。'
+        },
+        'daily-weather': {
+          title: '示範：日常的天氣現象',
+          lead: '小二 · 氣候與季節 · 日常的天氣現象',
+          body: '示範頁。連續幾日記錄陰、晴、雨、風同氣温。'
+        },
+        light: {
+          title: '示範：光的特性與相關現象',
+          lead: '小一 · 能量的不同形式和傳遞 · 光的特性與相關現象',
+          body: '示範頁。用手電照物件，睇光照射喺不透明物件上會有影子。'
+        },
+        'force-motion': {
+          title: '示範：力和與運動相關的現象',
+          lead: '小二、小四 · 力和運動 · 力和與運動相關的現象',
+          body: '示範頁。推拉玩具車，比下唔同地面邊度滑得遠，引入摩擦力。'
+        },
+        electricity: {
+          title: '示範：電的特性與相關現象',
+          lead: '小四 · 能量的不同形式和傳遞 · 電的特性與相關現象',
+          body: '示範頁。用電池、電線、燈泡砌簡單閉合電路，再講用電安全。'
+        },
+        'solar-system': {
+          title: '示範：太陽和八大行星',
+          lead: '小三、小五 · 宇宙中的太陽系',
+          body: '示範頁。用模型講太陽同八大行星，再觀察月亮形狀點樣變。'
+        },
+        'human-environment': {
+          title: '示範：人類行為對自然環境的影響',
+          lead: '小二、小五 · 生物與自然環境的相互關係',
+          body: '示範頁。由空氣污染、水污染同慳水講起，再諗下點樣保護環境。'
+        }
+      };
+      var id = new URLSearchParams(location.search).get('id') || '';
+      var page = pages[id] || {
+        title: '示範教學頁',
+        lead: '呢頁用嚟試篩選，唔係正式教材。',
+        body: '搵唔到對應示範。返回清單再揀過。'
+      };
+      document.title = page.title + '｜科學網站分享';
+      document.getElementById('demo-title').textContent = page.title;
+      document.getElementById('demo-lead').textContent = page.lead;
+      document.getElementById('demo-body').textContent = page.body;
+    })();
+  </script>
+</body>
+</html>
