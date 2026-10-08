@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="LWCPS 老師分享自製小學科學教學網站，按《科學（小一至小六）課程指引》（2025）的年級同課題篩選。" />
+  <meta name="theme-color" content="#2d8a6e" />
+  <title>科學網站分享｜小學科學</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=2" />
+</head>
+<body>
+  <a class="skip-link" href="#browse">跳到網站清單</a>
+  <div class="wrap">
+    <header class="site-header">
+      <p class="eyebrow">LWCPS · 科學（小一至小六）</p>
+      <h1>科學網站分享</h1>
+      <p class="subtitle">按課程指引嘅年級同課題，搵同事自製嘅教學網站。每張卡都有 QR，掃碼即開。</p>
+      <nav class="page-nav" aria-label="頁面">
+        <a class="page-nav-link" href="#browse">搵網站</a>
+        <a class="page-nav-link" href="#submit">提交網站</a>
+      </nav>
+    </header>
+
+    <div id="mock-banner" class="mock-banner" role="status" hidden>
+      <p id="mock-banner-text"></p>
+      <button type="button" class="btn btn-ghost" id="reset-mock-btn">重設示範資料</button>
+    </div>
+
+    <main>
+      <section class="card" id="browse" aria-labelledby="browse-title">
+        <div class="section-head">
+          <h2 id="browse-title"><span class="emoji" aria-hidden="true">🔎</span> 搵教學網站</h2>
+          <button type="button" class="btn btn-secondary" id="refresh-btn">重新整理</button>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-label-row">
+            <h3 id="filter-grade-label">年級</h3>
+            <button type="button" class="text-btn" id="clear-filters-btn">清除篩選</button>
+          </div>
+          <div class="chip-row" id="filter-grades" role="group" aria-labelledby="filter-grade-label"></div>
+        </div>
+
+        <div class="filter-block">
+          <h3 id="filter-topic-label">課題</h3>
+          <p class="hint">跟《科學（小一至小六）課程指引》（2025）四個學習範疇、39 個課題。可多選。</p>
+          <div id="filter-topics" role="group" aria-labelledby="filter-topic-label"></div>
+        </div>
+
+        <div class="filter-block">
+          <label for="keyword">關鍵字</label>
+          <input id="keyword" type="search" placeholder="搜尋標題、說明、課題或網址" autocomplete="off" enterkeyhint="search" />
+        </div>
+
+        <p class="result-meta" id="result-meta" aria-live="polite">載入緊…</p>
+        <div id="card-list" class="card-list"></div>
+      </section>
+
+      <section class="card" id="submit" aria-labelledby="submit-title">
+        <h2 id="submit-title"><span class="emoji" aria-hidden="true">✏️</span> 分享我嘅網站</h2>
+        <p class="section-lead">貼上你整好嘅教學網站，揀年級同課題。同事就可以喺上面搵到。</p>
+
+        <form id="share-form" class="form-grid" novalidate>
+          <div>
+            <label for="site-url">網站網址 <span class="req">必填</span></label>
+            <input id="site-url" name="url" type="url" inputmode="url" placeholder="https://" required maxlength="500" />
+          </div>
+
+          <div>
+            <label for="site-title">標題 <span class="req">必填</span></label>
+            <input id="site-title" name="title" type="text" placeholder="例如：小一健康的生活方式" required maxlength="80" />
+          </div>
+
+          <div>
+            <label for="site-note">簡短說明 <span class="hint">選填</span></label>
+            <textarea id="site-note" name="note" rows="3" maxlength="300" placeholder="呢個網站可以點用？適合邊個課題？"></textarea>
+          </div>
+
+          <div>
+            <label for="site-submitter">你嘅名字 <span class="hint">選填</span></label>
+            <input id="site-submitter" name="submitter" type="text" maxlength="40" placeholder="方便同事知道邊位整" />
+          </div>
+
+          <div>
+            <p class="field-label" id="form-grade-label">適合年級 <span class="req">可多選，至少一個</span></p>
+            <div class="chip-row" id="form-grades" role="group" aria-labelledby="form-grade-label"></div>
+          </div>
+
+          <div>
+            <p class="field-label" id="form-topic-label">課題 <span class="req">可多選，至少一個</span></p>
+            <p class="hint">名稱同課程指引一致。一個網站可以跨多過一個課題。</p>
+            <div id="form-topics" role="group" aria-labelledby="form-topic-label"></div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="btn btn-primary" id="submit-btn">提交分享</button>
+          </div>
+        </form>
+
+        <div id="feedback" class="feedback" role="status" aria-live="polite">
+          <p class="title" id="feedback-title"></p>
+          <p class="msg" id="feedback-msg"></p>
+          <div id="feedback-qr" class="feedback-qr" hidden></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-note">
+      <p>清單按年級同課題分類。正式使用會將資料寫入 Google 試算表；示範模式只留喺你部電腦。</p>
+    </footer>
+  </div>
+
+  <section class="print-sheet" id="print-sheet">
+    <p class="print-kicker">科學網站分享 · 小學科學</p>
+    <h1 id="print-title"></h1>
+    <div id="print-qr"></div>
+    <p id="print-url" class="print-url"></p>
+    <p>用電話相機掃碼即可開啟。</p>
+  </section>
+
+  <script src="vendor/qrcode-generator.js?v=2"></script>
+  <script src="vendor/qrcode-utf8.js?v=2"></script>
+  <script src="config.js?v=2"></script>
+  <script src="app.js?v=2"></script>
+</body>
+</html>
