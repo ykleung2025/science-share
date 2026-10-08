@@ -533,11 +533,19 @@ textarea[aria-invalid="true"] {
   margin: 0;
 }
 
-.strand-label {
-  margin: 0.85rem 0 0.35rem;
-  font-size: 0.92rem;
+details.strand {
+  border-top: 1px solid var(--border);
+  margin-top: 0.35rem;
+  padding-top: 0.15rem;
+}
+
+details.strand summary {
+  cursor: pointer;
   font-weight: 700;
   color: var(--primary-dark);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 .qr-block {

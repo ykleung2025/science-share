@@ -624,10 +624,12 @@
   function renderTopicGroups(container, selected, onChange) {
     container.innerHTML = '';
     STRANDS.forEach(function (strand) {
-      var strandLabel = document.createElement('p');
-      strandLabel.className = 'strand-label';
-      strandLabel.textContent = strand.label;
-      container.appendChild(strandLabel);
+      var details = document.createElement('details');
+      details.className = 'strand';
+      var summary = document.createElement('summary');
+      summary.textContent = strand.label;
+      details.appendChild(summary);
+      var strandHasSelection = false;
       strand.themes.forEach(function (theme) {
         var wrap = document.createElement('div');
         wrap.className = 'chip-group';
@@ -645,6 +647,7 @@
           btn.textContent = topic.label;
           var hint = topicHint(topic);
           if (hint) btn.title = hint;
+          if (selected[topic.id]) strandHasSelection = true;
           btn.addEventListener('click', function () {
             toggleMap(selected, topic.id);
             syncChip(btn, !!selected[topic.id]);
@@ -653,8 +656,10 @@
           row.appendChild(btn);
         });
         wrap.appendChild(row);
-        container.appendChild(wrap);
+        details.appendChild(wrap);
       });
+      if (strandHasSelection) details.open = true;
+      container.appendChild(details);
     });
   }
 
