@@ -1221,6 +1221,12 @@
     el.listFeedback.textContent = message;
   }
 
+  function revealListFeedback() {
+    if (el.listFeedback && el.listFeedback.className.indexOf('visible') !== -1 && el.listFeedback.scrollIntoView) {
+      el.listFeedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
   function clearListFeedback() {
     if (!el.listFeedback) return;
     el.listFeedback.className = 'feedback';
@@ -1449,7 +1455,7 @@
       }
       if (state.highlightId === id) state.highlightId = '';
       showListFeedback('success', data.message || '已移除。同事唔會再見到呢個網站。');
-      return loadList();
+      return loadList().then(revealListFeedback);
     }).catch(function (err) {
       showListFeedback('error', err && err.message ? err.message : '網絡有問題，請稍後再試。');
     });
