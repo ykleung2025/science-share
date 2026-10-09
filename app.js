@@ -2,6 +2,7 @@
  * 科學網站分享 — 前端
  * 示範模式（localStorage）或 Google Apps Script。
  * 年級／課題 id 要同 apps-script/Code.gs、README 一致。
+ * 修改／移除要用學校管理密碼。MANAGE_PASSWORD 要同 Code.gs 一致。
  */
 (function () {
   'use strict';
@@ -189,10 +190,13 @@
   var TOPIC_IDS = TOPICS.map(function (topic) { return topic.id; });
 
   var MOCK_KEY = 'science_share_mock_v2';
+  var SESSION_KEY = 'science_share_manage_pw';
+  var MANAGE_PASSWORD = '27585767';
   var URL_PLACEHOLDER = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
 
   var DEMO_SITES = [
     {
+      id: 'demo-p1animal',
       timestamp: '2026-09-18 10:00:00',
       title: '香港動物大探究',
       url: 'https://ykleung2025.github.io/p1animal/',
@@ -203,6 +207,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-p5air',
       timestamp: '2026-09-20 11:30:00',
       title: '小小科學家探究助手：空氣的秘密',
       url: 'https://ykleung2025.github.io/p5science/',
@@ -213,6 +218,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-body-structure',
       timestamp: '2026-09-22 09:00:00',
       title: '示範：生物的構造',
       url: 'samples/demo.html?id=body-structure',
@@ -223,6 +229,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-healthy-living',
       timestamp: '2026-09-23 09:20:00',
       title: '示範：健康的生活方式',
       url: 'samples/demo.html?id=healthy-living',
@@ -233,6 +240,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-daily-weather',
       timestamp: '2026-09-24 10:15:00',
       title: '示範：日常的天氣現象',
       url: 'samples/demo.html?id=daily-weather',
@@ -243,6 +251,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-light',
       timestamp: '2026-09-25 14:00:00',
       title: '示範：光的特性與相關現象',
       url: 'samples/demo.html?id=light',
@@ -253,6 +262,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-force-motion',
       timestamp: '2026-09-26 15:10:00',
       title: '示範：力和與運動相關的現象',
       url: 'samples/demo.html?id=force-motion',
@@ -263,6 +273,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-electricity',
       timestamp: '2026-09-28 09:40:00',
       title: '示範：電的特性與相關現象',
       url: 'samples/demo.html?id=electricity',
@@ -273,6 +284,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-solar-system',
       timestamp: '2026-09-30 16:05:00',
       title: '示範：太陽和八大行星',
       url: 'samples/demo.html?id=solar-system',
@@ -283,6 +295,7 @@
       status: 'approved',
     },
     {
+      id: 'demo-human-environment',
       timestamp: '2026-10-02 11:00:00',
       title: '示範：人類行為對自然環境的影響',
       url: 'samples/demo.html?id=human-environment',
@@ -309,6 +322,9 @@
     formTopics: {},
     submitting: false,
     highlightUrl: '',
+    highlightId: '',
+    editingId: '',
+    pendingRemoveId: '',
   };
 
   var el = {
@@ -334,6 +350,21 @@
     feedbackTitle: document.getElementById('feedback-title'),
     feedbackMsg: document.getElementById('feedback-msg'),
     feedbackQr: document.getElementById('feedback-qr'),
+    listFeedback: document.getElementById('list-feedback'),
+    submitTitleText: document.getElementById('submit-title-text'),
+    submitLead: document.getElementById('submit-lead'),
+    cancelEditBtn: document.getElementById('cancel-edit-btn'),
+    manageHint: document.getElementById('manage-hint'),
+    redeployNote: document.getElementById('redeploy-note'),
+    unlockForm: document.getElementById('unlock-form'),
+    unlockPassword: document.getElementById('unlock-password'),
+    unlockError: document.getElementById('unlock-error'),
+    unlockStatus: document.getElementById('unlock-status'),
+    lockBtn: document.getElementById('lock-btn'),
+    confirmModal: document.getElementById('confirm-modal'),
+    confirmMsg: document.getElementById('confirm-msg'),
+    confirmCancel: document.getElementById('confirm-cancel'),
+    confirmOk: document.getElementById('confirm-ok'),
     printSheet: document.getElementById('print-sheet'),
     printTitle: document.getElementById('print-title'),
     printUrl: document.getElementById('print-url'),
@@ -428,11 +459,80 @@
     return new Date().toISOString().slice(0, 19).replace('T', ' ');
   }
 
+  function canonicalUrl(raw) {
+    var trimmed = String(raw || '').trim();
+    if (USE_MOCK && /^samples\/demo\.html\?id=[a-z0-9-]+$/.test(trimmed)) return trimmed;
+    return normalizeUrl(raw);
+  }
+
+  function passwordMatches(value) {
+    var given = String(value || '').replace(/^\s+|\s+$/g, '');
+    if (!given || given.length !== MANAGE_PASSWORD.length) return false;
+    var mismatch = 0;
+    for (var i = 0; i < given.length; i++) {
+      if (given.charCodeAt(i) !== MANAGE_PASSWORD.charCodeAt(i)) mismatch++;
+    }
+    return mismatch === 0;
+  }
+
+  function readSuppliedPassword(body) {
+    if (body && body.managePassword != null && String(body.managePassword) !== '') {
+      return String(body.managePassword).replace(/^\s+|\s+$/g, '');
+    }
+    if (body && body.manageToken != null) return String(body.manageToken).replace(/^\s+|\s+$/g, '');
+    return '';
+  }
+
+  var sessionPasswordMemory = '';
+
+  function getSessionPassword() {
+    if (sessionPasswordMemory) return sessionPasswordMemory;
+    try {
+      return sessionStorage.getItem(SESSION_KEY) || '';
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function setSessionPassword(value) {
+    sessionPasswordMemory = value;
+    try {
+      sessionStorage.setItem(SESSION_KEY, value);
+    } catch (err) {
+      /* 私密模式可能擋 sessionStorage；呢個分頁仍然記住 */
+    }
+  }
+
+  function clearSessionPassword() {
+    sessionPasswordMemory = '';
+    try {
+      sessionStorage.removeItem(SESSION_KEY);
+    } catch (err) {
+      /* 忽略 */
+    }
+  }
+
+  function isUnlocked() {
+    return passwordMatches(getSessionPassword());
+  }
+
+  function createId() {
+    var cryptoObj = window.crypto || window.msCrypto;
+    if (cryptoObj && cryptoObj.getRandomValues) {
+      var bytes = new Uint8Array(16);
+      cryptoObj.getRandomValues(bytes);
+      var hex = '';
+      for (var i = 0; i < bytes.length; i++) hex += ('0' + bytes[i].toString(16)).slice(-2);
+      return hex;
+    }
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
+
   function validateSubmission(body) {
     var title = cleanText(body.title, 80);
     var note = cleanText(body.note, 300);
     var submitter = cleanText(body.submitter, 40);
-    var url = normalizeUrl(body.url);
+    var url = canonicalUrl(body.url);
     if (!url) {
       return { ok: false, error: 'invalid_url', message: '請貼上有效嘅網址（http 或 https）。' };
     }
@@ -471,6 +571,7 @@
   function cloneDemo() {
     return DEMO_SITES.map(function (item) {
       return {
+        id: item.id,
         timestamp: item.timestamp,
         title: item.title,
         url: item.url,
@@ -493,7 +594,7 @@
       }
       var parsed = JSON.parse(raw);
       if (!parsed || !parsed.length) return cloneDemo();
-      return parsed;
+      return ensureMockIds(parsed);
     } catch (err) {
       return cloneDemo();
     }
@@ -501,6 +602,22 @@
 
   function mockSave(rows) {
     localStorage.setItem(MOCK_KEY, JSON.stringify(rows));
+  }
+
+  function ensureMockIds(rows) {
+    var changed = false;
+    for (var i = 0; i < rows.length; i++) {
+      if (!rows[i].id) {
+        rows[i].id = createId();
+        changed = true;
+      }
+    }
+    if (changed) mockSave(rows);
+    return rows;
+  }
+
+  function urlsMatch(stored, target) {
+    return canonicalUrl(stored) === target;
   }
 
   function mockList() {
@@ -516,10 +633,7 @@
     var rows = mockLoad();
     var url = checked.item.url;
     for (var i = 0; i < rows.length; i++) {
-      var existing = rows[i].url.indexOf('samples/demo.html') === 0
-        ? rows[i].url
-        : normalizeUrl(rows[i].url);
-      if (existing === url) {
+      if (urlsMatch(rows[i].url, url)) {
         return {
           ok: false,
           error: 'duplicate',
@@ -528,6 +642,7 @@
       }
     }
     var item = checked.item;
+    item.id = createId();
     item.timestamp = hkNow();
     item.status = 'approved';
     rows.push(item);
@@ -539,10 +654,69 @@
     };
   }
 
+  function mockFindIndex(rows, id) {
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].id === id) return i;
+    }
+    return -1;
+  }
+
+  function mockUpdate(body) {
+    if (!passwordMatches(readSuppliedPassword(body))) {
+      return { ok: false, error: 'bad_password', message: '管理密碼不正確。' };
+    }
+    var id = String((body && body.id) || '').trim();
+    if (!id) return { ok: false, error: 'missing_id', message: '搵唔到要修改嘅分享。' };
+    var checked = validateSubmission(body);
+    if (!checked.ok) return checked;
+    var rows = mockLoad();
+    var index = mockFindIndex(rows, id);
+    if (index === -1) {
+      return { ok: false, error: 'not_found', message: '搵唔到呢個分享，可能已經移除。請重新整理。' };
+    }
+    var url = checked.item.url;
+    for (var j = 0; j < rows.length; j++) {
+      if (j === index) continue;
+      if (urlsMatch(rows[j].url, url)) {
+        return {
+          ok: false,
+          error: 'duplicate',
+          message: '呢個網址已經係清單入面。如果見唔到，可能被隱藏咗。',
+        };
+      }
+    }
+    var prev = rows[index];
+    var item = checked.item;
+    item.id = id;
+    item.timestamp = prev.timestamp;
+    item.status = prev.status || 'approved';
+    rows[index] = item;
+    mockSave(rows);
+    return { ok: true, item: item, message: '已更新。同事會見到新內容。' };
+  }
+
+  function mockRemove(body) {
+    if (!passwordMatches(readSuppliedPassword(body))) {
+      return { ok: false, error: 'bad_password', message: '管理密碼不正確。' };
+    }
+    var id = String((body && body.id) || '').trim();
+    if (!id) return { ok: false, error: 'missing_id', message: '搵唔到要移除嘅分享。' };
+    var rows = mockLoad();
+    var index = mockFindIndex(rows, id);
+    if (index === -1) {
+      return { ok: false, error: 'not_found', message: '搵唔到呢個分享，可能已經移除。請重新整理。' };
+    }
+    rows[index].status = 'hidden';
+    mockSave(rows);
+    return { ok: true, id: id, message: '已移除。同事唔會再見到呢個網站。' };
+  }
+
   function apiCall(payload) {
     if (USE_MOCK) {
       if (payload.action === 'list') return Promise.resolve(mockList());
       if (payload.action === 'submit') return Promise.resolve(mockSubmit(payload));
+      if (payload.action === 'update') return Promise.resolve(mockUpdate(payload));
+      if (payload.action === 'remove') return Promise.resolve(mockRemove(payload));
       return Promise.resolve({ ok: false, error: 'unknown_action', message: '未知操作。' });
     }
 
@@ -751,7 +925,11 @@
     shown.forEach(function (item) {
       var card = document.createElement('article');
       card.className = 'site-card';
-      if (state.highlightUrl && item.url === state.highlightUrl) card.classList.add('is-new');
+      if (item.id) card.setAttribute('data-id', item.id);
+      if ((state.highlightId && item.id === state.highlightId) ||
+          (!state.highlightId && state.highlightUrl && item.url === state.highlightUrl)) {
+        card.classList.add('is-new');
+      }
 
       var top = document.createElement('div');
       top.className = 'grade-row';
@@ -808,9 +986,9 @@
         card.appendChild(meta);
       }
 
+      var actions = document.createElement('div');
+      actions.className = 'card-actions';
       if (href) {
-        var actions = document.createElement('div');
-        actions.className = 'card-actions';
         var open = document.createElement('a');
         open.className = 'btn open-link';
         open.href = href;
@@ -818,9 +996,25 @@
         open.rel = 'noopener noreferrer';
         open.textContent = '開啟網站';
         actions.appendChild(open);
-        card.appendChild(actions);
-        appendQrBlock(card, item.title || '教學網站', absoluteUrl(href));
       }
+      if (item.id) {
+        var editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn btn-quiet';
+        editBtn.textContent = '修改';
+        editBtn.setAttribute('aria-label', '修改「' + (item.title || '網站') + '」');
+        editBtn.addEventListener('click', function () { requestManage('edit', item.id); });
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-quiet-danger';
+        removeBtn.textContent = '移除';
+        removeBtn.setAttribute('aria-label', '移除「' + (item.title || '網站') + '」');
+        removeBtn.addEventListener('click', function () { requestManage('remove', item.id); });
+        actions.appendChild(editBtn);
+        actions.appendChild(removeBtn);
+      }
+      if (actions.childNodes.length) card.appendChild(actions);
+      if (href) appendQrBlock(card, item.title || '教學網站', absoluteUrl(href));
 
       el.cardList.appendChild(card);
     });
@@ -996,11 +1190,153 @@
       }
       state.items = data.items || [];
       renderCards();
+      updateRedeployNote();
     }).catch(function (err) {
       state.items = [];
       el.cardList.innerHTML = '';
       el.resultMeta.textContent = '而家讀唔到清單。' + (err && err.message ? err.message : '請稍後再試。');
     });
+  }
+
+  function updateRedeployNote() {
+    if (!el.redeployNote) return;
+    var items = state.items.filter(isPublicItem);
+    var needs = items.length > 0;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].id) needs = false;
+    }
+    el.redeployNote.hidden = !needs;
+  }
+
+  function findItem(id) {
+    for (var i = 0; i < state.items.length; i++) {
+      if (state.items[i].id === id) return state.items[i];
+    }
+    return null;
+  }
+
+  function showListFeedback(kind, message) {
+    if (!el.listFeedback) return;
+    el.listFeedback.className = 'feedback visible ' + kind;
+    el.listFeedback.textContent = message;
+  }
+
+  function clearListFeedback() {
+    if (!el.listFeedback) return;
+    el.listFeedback.className = 'feedback';
+    el.listFeedback.textContent = '';
+  }
+
+  function showUnlockError(message) {
+    el.unlockError.hidden = !message;
+    el.unlockError.textContent = message || '';
+  }
+
+  function refreshLockUI() {
+    var on = isUnlocked();
+    el.unlockForm.hidden = on;
+    el.unlockStatus.hidden = !on;
+    el.lockBtn.hidden = !on;
+    if (on) {
+      el.manageHint.hidden = true;
+      showUnlockError('');
+    }
+  }
+
+  var pendingManage = null;
+
+  function requestManage(type, id) {
+    if (!isUnlocked()) {
+      pendingManage = { type: type, id: id };
+      var item = findItem(id);
+      var name = item && item.title ? '「' + item.title + '」' : '呢個網站';
+      el.manageHint.hidden = false;
+      el.manageHint.textContent = type === 'remove'
+        ? '輸入管理密碼後，就會確認移除' + name + '。'
+        : '輸入管理密碼後，就會開啟' + name + '嘅修改。';
+      location.hash = 'manage';
+      el.unlockPassword.focus();
+      return;
+    }
+    if (type === 'edit') beginEdit(id);
+    else openRemoveConfirm(id);
+  }
+
+  function runPendingManage() {
+    var pending = pendingManage;
+    pendingManage = null;
+    if (!pending || !isUnlocked()) return;
+    if (pending.type === 'edit') beginEdit(pending.id);
+    else openRemoveConfirm(pending.id);
+  }
+
+  function setFormSelection(item) {
+    state.formGrades = {};
+    state.formTopics = {};
+    (item.grades || []).forEach(function (id) {
+      if (GRADE_IDS.indexOf(id) !== -1) state.formGrades[id] = true;
+    });
+    (item.topics || []).forEach(function (id) {
+      if (TOPIC_IDS.indexOf(id) !== -1) state.formTopics[id] = true;
+    });
+    renderFormChips();
+  }
+
+  function exitEditMode() {
+    state.editingId = '';
+    if (el.submitTitleText) el.submitTitleText.textContent = '分享我嘅網站';
+    if (el.submitLead) el.submitLead.textContent = '貼上你整好嘅教學網站，揀年級同課題。同事就可以喺上面搵到。';
+    el.cancelEditBtn.hidden = true;
+  }
+
+  function beginEdit(id) {
+    var item = findItem(id);
+    if (!item) {
+      showListFeedback('error', '搵唔到呢個分享，請重新整理。');
+      return;
+    }
+    state.editingId = id;
+    el.urlInput.value = item.url || '';
+    el.titleInput.value = item.title || '';
+    el.noteInput.value = item.note || '';
+    el.submitterInput.value = item.submitter || '';
+    setFormSelection(item);
+    el.urlInput.removeAttribute('aria-invalid');
+    el.titleInput.removeAttribute('aria-invalid');
+    if (el.submitTitleText) el.submitTitleText.textContent = '修改網站';
+    if (el.submitLead) el.submitLead.textContent = '改好資料之後儲存。唔想改就撳取消。';
+    el.submitBtn.textContent = '儲存修改';
+    el.cancelEditBtn.hidden = false;
+    clearFeedback();
+    location.hash = 'submit';
+    if (el.form.scrollIntoView) el.form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.titleInput.focus();
+  }
+
+  function closeConfirm() {
+    state.pendingRemoveId = '';
+    el.confirmModal.hidden = true;
+  }
+
+  function openRemoveConfirm(id) {
+    var item = findItem(id);
+    if (!item) {
+      showListFeedback('error', '搵唔到呢個分享，請重新整理。');
+      return;
+    }
+    state.pendingRemoveId = id;
+    var title = item.title || '呢個網站';
+    el.confirmMsg.textContent = '確定要移除「' + title + '」？移除後同事會睇唔到，紀錄會留喺試算表（狀態 hidden）。';
+    el.confirmModal.hidden = false;
+    el.confirmOk.focus();
+  }
+
+  function noteBadPassword(data) {
+    if (data && data.error === 'bad_password') {
+      clearSessionPassword();
+      pendingManage = null;
+      refreshLockUI();
+    }
   }
 
   function resetForm() {
@@ -1019,8 +1355,17 @@
     el.urlInput.removeAttribute('aria-invalid');
     el.titleInput.removeAttribute('aria-invalid');
 
+    var editing = !!state.editingId;
+    if (editing && !isUnlocked()) {
+      pendingManage = null;
+      showFeedback('error', '未儲存到', '請先喺「管理分享」輸入管理密碼。');
+      location.hash = 'manage';
+      el.unlockPassword.focus();
+      return;
+    }
+
     var payload = {
-      action: 'submit',
+      action: editing ? 'update' : 'submit',
       url: el.urlInput.value,
       title: el.titleInput.value,
       note: el.noteInput.value,
@@ -1028,10 +1373,14 @@
       grades: selectedIds(state.formGrades),
       topics: selectedIds(state.formTopics),
     };
+    if (editing) {
+      payload.id = state.editingId;
+      payload.managePassword = getSessionPassword();
+    }
 
     var checked = validateSubmission(payload);
     if (!checked.ok) {
-      showFeedback('error', '未提交到', checked.message);
+      showFeedback('error', editing ? '未儲存到' : '未提交到', checked.message);
       if (checked.error === 'invalid_url') el.urlInput.setAttribute('aria-invalid', 'true');
       if (checked.error === 'invalid_title') el.titleInput.setAttribute('aria-invalid', 'true');
       if (checked.error === 'invalid_url') el.urlInput.focus();
@@ -1041,18 +1390,28 @@
 
     state.submitting = true;
     el.submitBtn.disabled = true;
-    el.submitBtn.textContent = '提交緊…';
+    el.submitBtn.textContent = editing ? '儲存緊…' : '提交緊…';
 
     apiCall(payload).then(function (data) {
       if (!data || data.ok === false) {
-        showFeedback('error', '未提交到', (data && data.message) || '請稍後再試。');
+        noteBadPassword(data);
+        showFeedback('error', editing ? '未儲存到' : '未提交到', (data && data.message) || '請稍後再試。');
         return;
       }
-      showFeedback('success', '已收到', data.message || '同事而家可以搵到呢個網站。');
-      state.highlightUrl = (data.item && data.item.url) || checked.item.url;
-      if (el.feedbackQr) {
-        el.feedbackQr.hidden = false;
-        appendQrBlock(el.feedbackQr, checked.item.title, state.highlightUrl);
+      var saved = data.item || checked.item;
+      state.highlightId = (data.item && data.item.id) || (editing ? payload.id : '');
+      state.highlightUrl = saved.url || checked.item.url;
+      if (editing) {
+        showFeedback('success', '已更新', data.message || '同事會見到新內容。');
+        showListFeedback('success', data.message || '已更新。');
+        exitEditMode();
+      } else {
+        showFeedback('success', '已收到', data.message || '同事而家可以搵到呢個網站。');
+        clearListFeedback();
+        if (el.feedbackQr) {
+          el.feedbackQr.hidden = false;
+          appendQrBlock(el.feedbackQr, saved.title || checked.item.title, absoluteUrl(state.highlightUrl));
+        }
       }
       resetForm();
       return loadList().then(function () {
@@ -1064,11 +1423,35 @@
         }
       });
     }).catch(function (err) {
-      showFeedback('error', '未提交到', err && err.message ? err.message : '網絡有問題，請稍後再試。');
+      showFeedback('error', editing ? '未儲存到' : '未提交到', err && err.message ? err.message : '網絡有問題，請稍後再試。');
     }).then(function () {
       state.submitting = false;
       el.submitBtn.disabled = false;
-      el.submitBtn.textContent = '提交分享';
+      el.submitBtn.textContent = state.editingId ? '儲存修改' : '提交分享';
+    });
+  }
+
+  function performRemove(id) {
+    return apiCall({
+      action: 'remove',
+      id: id,
+      managePassword: getSessionPassword(),
+    }).then(function (data) {
+      if (!data || data.ok === false) {
+        noteBadPassword(data);
+        showListFeedback('error', (data && data.message) || '移除唔到，請稍後再試。');
+        return;
+      }
+      if (state.editingId === id) {
+        exitEditMode();
+        resetForm();
+        clearFeedback();
+      }
+      if (state.highlightId === id) state.highlightId = '';
+      showListFeedback('success', data.message || '已移除。同事唔會再見到呢個網站。');
+      return loadList();
+    }).catch(function (err) {
+      showListFeedback('error', err && err.message ? err.message : '網絡有問題，請稍後再試。');
     });
   }
 
@@ -1110,14 +1493,66 @@
 
   el.form.addEventListener('submit', onSubmit);
 
+  el.cancelEditBtn.addEventListener('click', function () {
+    exitEditMode();
+    resetForm();
+    clearFeedback();
+    el.submitBtn.textContent = '提交分享';
+  });
+
+  el.unlockForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var value = String(el.unlockPassword.value || '').replace(/^\s+|\s+$/g, '');
+    if (!passwordMatches(value)) {
+      showUnlockError('管理密碼不正確。');
+      el.unlockPassword.focus();
+      return;
+    }
+    setSessionPassword(value);
+    el.unlockPassword.value = '';
+    showUnlockError('');
+    refreshLockUI();
+    runPendingManage();
+  });
+
+  el.lockBtn.addEventListener('click', function () {
+    clearSessionPassword();
+    pendingManage = null;
+    refreshLockUI();
+  });
+
+  el.confirmCancel.addEventListener('click', closeConfirm);
+
+  el.confirmOk.addEventListener('click', function () {
+    var id = state.pendingRemoveId;
+    closeConfirm();
+    if (id) performRemove(id);
+  });
+
+  el.confirmModal.addEventListener('click', function (event) {
+    if (event.target === el.confirmModal) closeConfirm();
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && el.confirmModal && !el.confirmModal.hidden) closeConfirm();
+  });
+
   el.resetMockBtn.addEventListener('click', function () {
     if (!USE_MOCK) return;
     if (!window.confirm('重設之後，呢部電腦嘅示範清單會還原，你喺示範模式提交過嘅網站會唔見。確定？')) return;
     localStorage.removeItem(MOCK_KEY);
     state.highlightUrl = '';
+    state.highlightId = '';
+    if (state.editingId) {
+      exitEditMode();
+      resetForm();
+    }
+    clearListFeedback();
     loadList();
   });
 
+  if (getSessionPassword() && !isUnlocked()) clearSessionPassword();
+  refreshLockUI();
   readFiltersFromUrl();
   renderFilterChips();
   renderFormChips();

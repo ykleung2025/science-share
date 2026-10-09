@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
   <a class="skip-link" href="#browse">跳到網站清單</a>
@@ -21,6 +21,7 @@
       <p class="subtitle">按課程指引嘅年級同課題，搵同事自製嘅教學網站。每張卡都有 QR，掃碼即開。</p>
       <nav class="page-nav" aria-label="頁面">
         <a class="page-nav-link" href="#browse">搵網站</a>
+        <a class="page-nav-link" href="#manage">管理分享</a>
         <a class="page-nav-link" href="#submit">提交網站</a>
       </nav>
     </header>
@@ -57,12 +58,32 @@
         </div>
 
         <p class="result-meta" id="result-meta" aria-live="polite">載入緊…</p>
+        <div id="list-feedback" class="feedback" role="status" aria-live="polite"></div>
         <div id="card-list" class="card-list"></div>
       </section>
 
+      <section class="card" id="manage" aria-labelledby="manage-title">
+        <h2 id="manage-title"><span class="emoji" aria-hidden="true">🔑</span> 管理分享</h2>
+        <p class="section-lead">修改或移除清單入面嘅網站，要輸入學校共用管理密碼。密碼只會記住喺呢個分頁，關閉之後要再輸入。清單唔會顯示密碼。</p>
+        <p id="manage-hint" class="manage-hint" hidden></p>
+        <p id="redeploy-note" class="manage-hint" hidden>清單未有編號。請管理員將新嘅 Apps Script 重新部署（同一個網址）之後，再撳重新整理。</p>
+        <form id="unlock-form" class="form-grid" autocomplete="off">
+          <div>
+            <label for="unlock-password">管理密碼</label>
+            <input id="unlock-password" name="science-share-manage-password" type="password" inputmode="numeric" autocomplete="off" spellcheck="false" />
+            <p id="unlock-error" class="form-error" hidden></p>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn btn-primary btn-inline" id="unlock-btn">解鎖呢個分頁</button>
+          </div>
+        </form>
+        <p id="unlock-status" class="unlock-status" hidden>呢個分頁已解鎖。可以撳卡片上嘅「修改」或「移除」。</p>
+        <button type="button" class="btn btn-secondary" id="lock-btn" hidden>鎖定</button>
+      </section>
+
       <section class="card" id="submit" aria-labelledby="submit-title">
-        <h2 id="submit-title"><span class="emoji" aria-hidden="true">✏️</span> 分享我嘅網站</h2>
-        <p class="section-lead">貼上你整好嘅教學網站，揀年級同課題。同事就可以喺上面搵到。</p>
+        <h2 id="submit-title"><span class="emoji" aria-hidden="true">✏️</span> <span id="submit-title-text">分享我嘅網站</span></h2>
+        <p class="section-lead" id="submit-lead">貼上你整好嘅教學網站，揀年級同課題。同事就可以喺上面搵到。</p>
 
         <form id="share-form" class="form-grid" novalidate>
           <div>
@@ -98,6 +119,7 @@
 
           <div class="actions">
             <button type="submit" class="btn btn-primary" id="submit-btn">提交分享</button>
+            <button type="button" class="btn btn-secondary" id="cancel-edit-btn" hidden>取消修改</button>
           </div>
         </form>
 
@@ -110,7 +132,7 @@
     </main>
 
     <footer class="footer-note">
-      <p>清單按年級同課題分類。正式使用會將資料寫入 Google 試算表；示範模式只留喺你部電腦。</p>
+      <p>清單按年級同課題分類。修改或移除請用「管理分享」輸入學校管理密碼。正式使用會將資料寫入 Google 試算表；示範模式只留喺你部電腦。</p>
     </footer>
   </div>
 
@@ -122,9 +144,20 @@
     <p>用電話相機掃碼即可開啟。</p>
   </section>
 
-  <script src="vendor/qrcode-generator.js?v=4"></script>
-  <script src="vendor/qrcode-utf8.js?v=4"></script>
-  <script src="config.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <div id="confirm-modal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h2 id="confirm-title">移除分享</h2>
+      <p id="confirm-msg"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="confirm-cancel">取消</button>
+        <button type="button" class="btn btn-danger" id="confirm-ok">確定移除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/qrcode-generator.js?v=5"></script>
+  <script src="vendor/qrcode-utf8.js?v=5"></script>
+  <script src="config.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
