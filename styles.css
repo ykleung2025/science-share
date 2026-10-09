@@ -26,6 +26,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   font-size: 16px;
   scroll-behavior: smooth;
@@ -259,6 +263,7 @@ label,
 input[type="url"],
 input[type="text"],
 input[type="search"],
+input[type="password"],
 textarea {
   width: 100%;
   padding: 0.72rem 0.85rem;
@@ -293,7 +298,19 @@ textarea[aria-invalid="true"] {
 }
 
 .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-top: 0.15rem;
+}
+
+.form-grid .actions .btn-primary {
+  width: auto;
+  flex: 1 1 12rem;
+}
+
+.form-grid .actions .btn-secondary {
+  flex: 1 1 8rem;
 }
 
 .btn {
@@ -337,6 +354,41 @@ textarea[aria-invalid="true"] {
 
 .btn-secondary:hover:not(:disabled) {
   background: #d5e8f3;
+}
+
+.btn-primary.btn-inline {
+  width: auto;
+  min-width: 8rem;
+}
+
+.btn-quiet {
+  background: #fff;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+
+.btn-quiet:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+.btn-quiet-danger {
+  background: #fff;
+  color: var(--danger);
+  border: 1.5px solid #f0c2bd;
+}
+
+.btn-quiet-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #a8433c;
 }
 
 .btn-ghost {
@@ -531,6 +583,66 @@ textarea[aria-invalid="true"] {
 
 .footer-note p {
   margin: 0;
+}
+
+.manage-hint,
+.unlock-status {
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.form-error {
+  margin: 0.4rem 0 0;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(26, 44, 51, 0.48);
+}
+
+.modal-card {
+  width: min(100%, 26rem);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 1.15rem 1.1rem 1.2rem;
+  box-shadow: var(--shadow);
+}
+
+.modal-card h2 {
+  margin: 0 0 0.45rem;
+  color: var(--primary-dark);
+  font-size: 1.15rem;
+}
+
+.modal-card p {
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.modal-actions .btn {
+  flex: 1 1 8rem;
+}
+
+#list-feedback.visible {
+  margin-bottom: 0.75rem;
+  font-weight: 700;
 }
 
 details.strand {

@@ -13,6 +13,8 @@ LWCPS 老師用嚟分享同搵自製**小學科學**教學網站。介面係繁�
 - 前端：純 HTML / CSS / JS（無廣告、無追蹤）
 - 後端：Google 試算表 + Google Apps Script 網頁應用程式
 - 每張卡片同提交成功之後，瀏覽器會產生該網址嘅 QR code（可下載 PNG、可列印）
+- 老師可以**修改**或**移除**清單入面嘅網站。移除係軟刪除（`status` 改做 `hidden`）
+- 修改同移除要用學校共用管理密碼，唔係每筆分享一個碼。而家密碼係 `27585767`
 - 作者帳號：GitHub `ykleung2025`
 - 打算發佈：<https://ykleung2025.github.io/science-share/>
 
@@ -95,7 +97,7 @@ LWCPS 老師用嚟分享同搵自製**小學科學**教學網站。介面係繁�
 |------|------|
 | `index.html` | 搵網站同提交網站 |
 | `styles.css` | 手機友善樣式 |
-| `app.js` | 篩選、提交、示範模式、QR |
+| `app.js` | 篩選、提交、修改、移除、示範模式、QR |
 | `config.js` | `APPS_SCRIPT_URL` 同 `USE_MOCK` |
 | `apps-script/Code.gs` | 試算表網頁應用程式 |
 | `vendor/qrcode-generator.js` | Kazuhiko Arase 嘅 QR Code Generator（MIT） |
@@ -125,7 +127,9 @@ LWCPS 老師用嚟分享同搵自製**小學科學**教學網站。介面係繁�
 4. 撳「下載 QR」會下載 PNG；「列印 QR」會開列印版（大 QR、標題、網址）。
 5. 去「提交網站」貼上網址、標題，揀至少一個年級同一個課題。成功之後，回覆區都會出 QR。
 6. 同一個網址再交一次，會話已經係清單入面。
-7. 示範資料存在瀏覽器 `localStorage`。橫額上「重設示範資料」可以還原。
+7. 「管理分享」輸入學校管理密碼 `27585767`，解鎖只係呢個分頁。之後每張卡有「修改」同「移除」。
+8. 「修改」會開預先填好嘅表格，儲存即更新。「移除」要再確認，該筆會變成 `hidden`，清單唔再顯示。
+9. 示範資料存在瀏覽器 `localStorage`。橫額上「重設示範資料」可以還原。管理密碼記喺 `sessionStorage`，關分頁就會再問。
 
 示範清單有兩頁現有教學頁（香港動物大探究、小小科學家探究助手：空氣的秘密），其餘標明「示範」嘅卡片只係用來試篩選。
 
@@ -150,11 +154,15 @@ QR 喺瀏覽器產生，唔經付費 API。編碼嘅係該網站嘅完整網址�
 2. 工作表可以留空。腳本會建立名為 `分享` 嘅工作表，並寫第 1 列標題。
 3. 欄位：
 
-| A timestamp | B title | C url | D grades | E topics | F note | G submitter | H status |
-|-------------|---------|-------|----------|----------|--------|------------|----------|
-| 2026-10-08 09:30:00 | 小一健康的生活方式 | https://example.com/health | P1 | healthy-living | 選填 | 選填 | approved |
+| A timestamp | B title | C url | D grades | E topics | F note | G submitter | H status | I id |
+|-------------|---------|-------|----------|----------|--------|------------|----------|----|
+| 2026-10-08 09:30:00 | 小一健康的生活方式 | https://example.com/health | P1 | healthy-living | 選填 | 選填 | approved | 3f1c2a40-7b2e-4d1a-9c55-0a6e8b1d4f20 |
 
 `grades`、`topics` 用英文 id，多個以英文逗號分隔，例如 `P1,P2`、`light,inquiry-process`。
+
+`id` 係穩定編號，用來對應修改同移除。新提交由腳本產生 UUID。**唔使**加 `manageToken` 欄，管理密碼唔會寫入試算表，清單 API 亦唔會回傳密碼。
+
+已經有資料、只有 A–H 嘅舊表：新腳本第一次執行（list、submit、update 或 remove）會喺後面加 `id` 欄，並為有標題或網址但未有 id 的列補上 UUID。原有欄序唔會調動。舊列冇獨立管理碼；知道學校密碼就可以喺網頁改或移除。想手動收起一列，仍然可以喺試算表把 `status` 改做 `hidden` 或 `rejected`。
 
 ### 2. 貼上 Apps Script
 
@@ -173,7 +181,9 @@ QR 喺瀏覽器產生，唔經付費 API。編碼嘅係該網站嘅完整網址�
 4. 按 **部署**。首次要授權：選帳號 →「進階」→「前往……（不安全）」→ 允許。
 5. 複製網頁應用程式網址，形如 `https://script.google.com/macros/s/xxxxx/exec`。
 
-之後如果改 `Code.gs`，要再 **部署 → 管理部署作業 → 編輯 → 版本 → 新版本**，否則線上仍係舊程式。
+之後如果改 `Code.gs`，要再 **部署 → 管理部署作業 → 編輯（鉛筆）→ 版本 → 新版本 → 部署**。網址保持同一個 `/exec`，唔使改 `config.js`。如果只儲存腳本而冇部署新版本，線上仍係舊程式，修改同移除會失敗。
+
+**合併呢次改動之後，一定要用新的 `apps-script/Code.gs` 重新部署，線上先可以修改同移除。** 舊部署的 list／submit 仍可用，但清單未有 `id`，網頁會提示重新部署。
 
 ### 4. 填入前端設定
 
@@ -192,9 +202,21 @@ window.SCIENCE_SHARE_CONFIG = {
 
 v1 提交即 `status = approved`，清單會顯示狀態空白、`approved` 或 `public` 嘅列。
 
-想暫時收起一條，喺試算表將 `status` 改做 `hidden` 或 `rejected`，唔使刪列。
+想暫時收起一條，喺試算表將 `status` 改做 `hidden` 或 `rejected`，唔使刪列。網頁「移除」亦係把 `status` 設做 `hidden`，列會留低。隱藏列的網址仍然算重複，唔可以再提交同一個網址。
 
 `Code.gs` 頂部 `DEDUPE_BY_URL = true`：同一個正規化網址（小寫網域、去掉 `#` 同尾端 `/`）只收一次。想允許重複就改做 `false`，再部署新版本。
+
+### 管理密碼
+
+修改同移除要學校共用密碼，對照生物環境網站老師閘門嘅做法：一個密碼，唔係每筆分享一組碼。
+
+- 常數 `MANAGE_PASSWORD` 而家係 `27585767`
+- 伺服器喺 `apps-script/Code.gs` 核對；示範模式喺 `app.js` 用同一個常數
+- 請求欄位可以用 `managePassword`，或者 `manageToken`（兩個都要等於上面個密碼）
+- 頁面「管理分享」輸入一次，記住喺呢個分頁嘅 `sessionStorage`。關閉分頁就要再輸入。唔會寫入 `localStorage`，清單回應亦唔包含密碼
+- 想改密碼：同時改 `Code.gs` 同 `app.js` 的 `MANAGE_PASSWORD`，再重新部署 Apps Script，並更新前端
+
+未解鎖時撳卡片「修改」或「移除」，會先去「管理分享」問密碼。解鎖之後，「修改」開預先填好嘅表格並呼叫 `update`；「移除」確認後呼叫 `remove`。
 
 ### 6. API
 
@@ -202,10 +224,12 @@ v1 提交即 `status = approved`，清單會顯示狀態空白、`approved` 或 
 
 | action | 說明 |
 |--------|------|
-| `list` | 回傳公開列（空白 / `approved` / `public`），新嘅排前面 |
-| `submit` | 寫入一列。必填：`title`、`url`、至少一個 `grades`、至少一個 `topics` |
+| `list` | 回傳公開列（空白 / `approved` / `public`），新嘅排前面。每項有 `id`。唔包含管理密碼 |
+| `submit` | 寫入一列並產生 `id`。必填：`title`、`url`、至少一個 `grades`、至少一個 `topics` |
+| `update` | POST。必填：`id`、`managePassword`（或 `manageToken`），加上同 submit 一樣嘅欄位。密碼正確而且 id 存在先至寫入。回傳更新後的公開項目（無密碼） |
+| `remove` | POST。必填：`id`、`managePassword`（或 `manageToken`）。將該列 `status` 設做 `hidden` |
 
-`note`、`submitter` 可留空。`doGet?action=list` 都可以拎清單。開 `/exec` 而唔帶 action，只會回一句運作中，唔會倒出成張表。
+`note`、`submitter` 可留空。`doGet?action=list` 都可以拎清單。`update` 同 `remove` 唔接受 GET，避免密碼出現喺網址。開 `/exec` 而唔帶 action，只會回一句運作中，唔會倒出成張表。
 
 ---
 
@@ -221,4 +245,6 @@ v1 提交即 `status = approved`，清單會顯示狀態空白、`approved` 或 
 
 未接上試算表之前，線上網站都係示範模式，每人瀏覽器各自一份資料。接上之後先會大家睇到同一張清單。
 
-CSS / JS 連結帶 `?v=4`。改完前端記得加大版本號，否則同事可能仍然睇到舊檔。課題篩選按四個學習範疇摺起，撳開先揀。
+CSS / JS 連結帶 `?v=5`。改完前端記得加大版本號，否則同事可能仍然睇到舊檔。課題篩選按四個學習範疇摺起，撳開先揀。
+
+前端上線之後，記得用新 `Code.gs` 重新部署 Apps Script（部署 → 管理部署作業 → 編輯 → 新版本）。同一個 `/exec` 網址。未部署之前，線上可以繼續睇同提交，但修改同移除未會生效。
